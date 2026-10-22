@@ -1,4 +1,4 @@
-import cv2
+import cv2 as cv
 import rclpy
 import time
 import gym_gazebo
@@ -140,7 +140,15 @@ class LineFollowerEnv(GazeboEnv):
         '''
         vel_cmd = RosTwist()
 
-        # TODO: Impelement process action.
+        if action == 0:
+            vel_cmd.linear.x = 0.2
+            vel_cmd.angular.z = 1.0
+        elif action == 1:
+            vel_cmd.linear.x = 0.2
+            vel_cmd.angular.z = 0.0
+        else:
+            vel_cmd.linear.x = 0.2
+            vel_cmd.angular.z = -1.0  
         
         return vel_cmd
 
@@ -153,7 +161,12 @@ class LineFollowerEnv(GazeboEnv):
         '''
         reward = 0
 
-        # TODO: Implement process reward.
+        if terminated:
+            reward = -10
+        elif action == 1:
+            reward = 5
+        else: 
+            reward = 4
         
         return reward
 
@@ -171,11 +184,39 @@ class LineFollowerEnv(GazeboEnv):
         '''
         cv_image = CvBridge().imgmsg_to_cv2(obs, desired_encoding='bgr8')
 
-        state = 0
+        # 1. convert to grayscale, then binary (from lab 2)
+        grayFrame = cv.cvtColor(cv_image, cv.COLOR_BGR2GRAY)
+        usedThreshold, binaryFrame = cv.threshold(
+            grayFrame,
+            80, # threshold value (gets returned in usedThreshold)
+            255, # below threshold, go to this value
+            cv.THRESH_BINARY_INV # make the dark pixels WHITE
+        )
+
+        # TEMPORARY
+        cv.imshow("Robot camera", cv_image)
+        cv.imshow("Detected line", binaryFrame)
+        cv.waitKey(1)
+
         terminated = False
+        # the track is out of frame
+        height_thresold = int(0.75 * binaryFrame.shape[0])
+        if 255 not in binaryFrame[height_thresold:]:
+            state = -1
+            terminated = True
+        # return the state based on the average horizontal position of the road
+        else:
+            _, columns = np.where(binaryFrame[height_thresold:] == 255)
+            average_road_position = np.mean(columns)
 
-        # TODO: Implement process observation
-
+            image_width = binaryFrame.shape[1]
+            if average_road_position < image_width / 3:
+                state = 0
+            elif image_width / 3 <= average_road_position < image_width * 2/3:
+                state = 1
+            else:
+                state = 2
+           
         return state, terminated
 
 

@@ -9,15 +9,15 @@ def main():
     writer = SummaryWriter()
     env = gym.make('LineFollowerEnv-v0')
 
-    observation_space = env.observation_space
-    action_space = env.action_space
+    observation_space = env.observation_space # 0=line on left; 1=line centered; 2=line on right
+    action_space = env.action_space # 0=drive left, 1=drive fwd; 2=drive right
 
     epsilon = 0.8
     epsilon_decay = 0.99
 
-    q_table = np.zeros((observation_space.n, action_space.n))
+    q_table = loadQ("best_q_table.npy")
 
-    highest_reward = 0
+    highest_reward = float("-inf")
 
     try:
         state, _ = env.reset()
@@ -48,9 +48,10 @@ def main():
 
             if total_reward > highest_reward:
                 highest_reward = total_reward
-                print("New highest reward: {total_reward}.")
+                print(f"New highest reward: {total_reward}.")
+                saveQ(q_table, "best_q_table.npy")
 
-            env.reset()
+            state, _ = env.reset()
             epsilon = max(0.01, epsilon * epsilon_decay)  # Decay epsilon
 
     except KeyboardInterrupt:
@@ -66,30 +67,34 @@ def learn(state, action, next_state, reward, q_table):
     alpha = 0.1
     gamma = 0.9
 
-    # TODO: Implement update Q values using the Bellman update equation
+    if next_state == -1:
+        next_state_term = 0
+        # handle road going off screen; this terminating state has no associated actions to contribute to reward
+    else:
+        next_state_term = gamma * np.max(q_table[next_state]) 
 
+    current_value = q_table[state][action]
+    new_value = current_value + alpha * (reward + next_state_term - current_value)
+    q_table[state][action] = new_value
     return q_table
 
 
 def choose_action(state, q_table, epsilon, action_space):
-    action = 0
-
-    # TODO: Implement choose action.
-    
-    return action
-
+    explore = random.random() < epsilon
+    if explore: return action_space.sample()
+    q_vals = q_table[state]
+    max_q = np.max(q_vals)
+    max_indeces = []
+    for i in range(len(q_vals)):
+        if q_vals[i] == max_q:
+            max_indeces.append(i)
+    return random.choice(max_indeces)
 
 def saveQ(q_table, save_path):
-
-    # TODO: Implement saving the Q values
-
-    return
+    np.save(save_path, q_table)
 
 def loadQ(load_path):
-
-    # TODO: Implement loading the Q values
-
-    return
+    return np.load(load_path)
 
 if __name__ == "__main__":
     main()
