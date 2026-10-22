@@ -141,14 +141,14 @@ class LineFollowerEnv(GazeboEnv):
         vel_cmd = RosTwist()
 
         if action == 0:
-            vel_cmd.linear.x = 0.2
-            vel_cmd.angular.z = 1.0
+            vel_cmd.linear.x = 1.0
+            vel_cmd.angular.z = 3.0
         elif action == 1:
-            vel_cmd.linear.x = 0.2
+            vel_cmd.linear.x = 1.0
             vel_cmd.angular.z = 0.0
         else:
-            vel_cmd.linear.x = 0.2
-            vel_cmd.angular.z = -1.0  
+            vel_cmd.linear.x = 1.0
+            vel_cmd.angular.z = -3.0
         
         return vel_cmd
 
@@ -162,9 +162,9 @@ class LineFollowerEnv(GazeboEnv):
         reward = 0
 
         if terminated:
-            reward = -10
+            reward = -100
         elif action == 1:
-            reward = 5
+            reward = 6
         else: 
             reward = 4
         

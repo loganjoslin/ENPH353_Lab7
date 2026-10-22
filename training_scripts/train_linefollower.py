@@ -15,7 +15,7 @@ def main():
     epsilon = 0.8
     epsilon_decay = 0.99
 
-    q_table = loadQ("best_q_table.npy")
+    q_table = np.zeros((observation_space.n, action_space.n))
 
     highest_reward = float("-inf")
 
